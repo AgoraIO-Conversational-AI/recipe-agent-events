@@ -62,7 +62,11 @@ Services:
 
 Deploy `web` (Next.js) and `server` (a reachable FastAPI backend). Set
 `AGENT_BACKEND_URL` in the web deployment so the Next rewrites reach the backend.
-No separate LLM container is needed — OpenAI is Agora-managed.
+
+A backend-only Docker image is published to
+`ghcr.io/AgoraIO-Conversational-AI/recipe-agent-events` on `v*` tags.
+It exposes **BACKEND-ONLY** (:8000). No separate LLM container is needed —
+OpenAI is Agora-managed.
 
 ## Environment variables
 
@@ -89,7 +93,7 @@ bun run clean            # remove venvs and build artifacts
 ```
 
 Tests run standalone (no Agora cloud needed): `pytest` in `server/`, plus
-`bun run verify` in `web/`.
+`bun run verify` in `web/`. CI runs them on Linux/macOS/Windows × Python 3.10 & 3.13.
 
 ## Architecture
 
