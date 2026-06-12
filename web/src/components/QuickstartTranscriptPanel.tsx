@@ -13,6 +13,8 @@ type QuickstartTranscriptPanelProps = {
 	messageList: TranscriptMessage[];
 	currentInProgressMessage: TranscriptMessage | null;
 	agentUID: string;
+	/** Current agent state — shown as an annotation in the header when present */
+	agentState?: string | null;
 };
 
 function formatMessageTime(createdAt?: number) {
@@ -27,6 +29,7 @@ export function QuickstartTranscriptPanel({
 	messageList,
 	currentInProgressMessage,
 	agentUID,
+	agentState,
 }: QuickstartTranscriptPanelProps) {
 	const scrollRef = useRef<HTMLDivElement>(null);
 	const messages = useMemo(
@@ -53,6 +56,11 @@ export function QuickstartTranscriptPanel({
 					<h2 className="text-sm font-semibold text-foreground">Transcript</h2>
 					<p className="text-xs text-muted-foreground">Live voice turns</p>
 				</div>
+				{agentState ? (
+					<span className="rounded-full border border-border bg-card/60 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+						{agentState}
+					</span>
+				) : null}
 			</div>
 
 			<div

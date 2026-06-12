@@ -9,6 +9,7 @@ type QuickstartConversationLayoutProps = {
 	statusPanel: ReactNode;
 	pipelineMetrics: ReactNode;
 	transcriptPanel: ReactNode;
+	eventTimeline?: ReactNode;
 	visualizer: ReactNode;
 	controls: ReactNode;
 	onEndConversation: () => void;
@@ -18,6 +19,7 @@ export function QuickstartConversationLayout({
 	statusPanel,
 	pipelineMetrics,
 	transcriptPanel,
+	eventTimeline,
 	visualizer,
 	controls,
 	onEndConversation,
@@ -57,8 +59,11 @@ export function QuickstartConversationLayout({
 			</header>
 
 			<div className="flex min-h-0 w-full flex-1 flex-col gap-4 px-4 pb-4 pt-4 md:px-6 lg:flex-row lg:gap-0">
-				<aside className="order-2 h-64 min-h-0 w-full shrink-0 lg:order-1 lg:h-full lg:w-[26rem]">
-					{transcriptPanel}
+				<aside className="order-2 flex min-h-0 w-full shrink-0 flex-col gap-4 lg:order-1 lg:h-full lg:w-[26rem]">
+					<div className="h-64 min-h-0 lg:h-[45%]">{transcriptPanel}</div>
+					{eventTimeline ? (
+						<div className="h-64 min-h-0 flex-1 lg:h-0 lg:flex-1">{eventTimeline}</div>
+					) : null}
 				</aside>
 
 				<main className="order-1 flex min-h-0 flex-1 flex-col lg:order-2 lg:border-l lg:border-border/80 lg:pl-6">
