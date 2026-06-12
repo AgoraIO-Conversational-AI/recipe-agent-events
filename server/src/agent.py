@@ -1,13 +1,14 @@
 """
-Agent — Translator Recipe
+Agent — Events Recipe
 
-High-level API for managing Agora Conversational AI Agents for real-time
-speech translation. The pipeline is:
+High-level API for managing an Agora Conversational AI Agent that exposes the
+full built-in event surface (agent state, per-stage metrics, errors, transcript)
+over RTM.
 
-  DeepgramSTT(language=SOURCE_LANG) → OpenAI (translate to TARGET_LANG) → MiniMaxTTS(TTS_VOICE)
+Pipeline:  DeepgramSTT(nova-3, en) → OpenAI (Agora-managed, keyless) → MiniMaxTTS
 
-OpenAI is Agora-managed (keyless by default). OPENAI_API_KEY is optional — set it
-only if your account requires a BYO key.
+The backend has no special logic beyond enabling the event flags.
+OPENAI_API_KEY is optional — set it only if your account requires a BYO key.
 """
 import logging
 import os
@@ -17,18 +18,17 @@ from typing import Any, Dict, Optional
 from agora_agent import Area, AsyncAgora
 from agora_agent.agentkit import Agent as AgoraAgent
 from agora_agent.agentkit.vendors import OpenAI, DeepgramSTT, MiniMaxTTS
-from translation_config import build_translation_system_messages
 
 logger = logging.getLogger("uvicorn.error")
 
 
 class Agent:
     """
-    High-level wrapper for Agora Conversational AI Agent for speech translation.
+    High-level wrapper for Agora Conversational AI Agent for event observability.
 
-    Uses the managed OpenAI vendor (Agora-managed, keyless) to translate speech
-    from SOURCE_LANG into TARGET_LANG, then speaks the result via MiniMaxTTS.
-    No custom LLM endpoint or public tunnel is required.
+    Uses the managed OpenAI vendor (Agora-managed, keyless) with a simple
+    friendly prompt. Enables RTM data channel, metrics, and error messages so
+    the web client can surface the full event timeline.
     """
 
     def __init__(self):
@@ -36,15 +36,12 @@ class Agent:
         self.app_certificate = os.getenv("AGORA_APP_CERTIFICATE")
         self.greeting = os.getenv(
             "AGENT_GREETING",
-            "Hi! Speak to me and I'll translate.",
+            "Hi! Talk to me and watch the event timeline light up.",
         )
 
-        # OpenAI is Agora-managed (keyless), like Deepgram/MiniMax. OPENAI_API_KEY is optional.
+        # OpenAI is Agora-managed (keyless). OPENAI_API_KEY is optional.
         self.openai_api_key = os.getenv("OPENAI_API_KEY")
         self.openai_model = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
-        self.source_lang = os.getenv("SOURCE_LANG", "es")
-        self.target_lang = os.getenv("TARGET_LANG", "English")
-        self.tts_voice = os.getenv("TTS_VOICE", "English_captivating_female1")
 
         if not self.app_id or not self.app_certificate:
             raise ValueError("AGORA_APP_ID and AGORA_APP_CERTIFICATE are required")
@@ -65,7 +62,7 @@ class Agent:
         user_uid: int,
         output_audio_codec: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """Start translation agent."""
+        """Start the events agent."""
         if not channel_name or not str(channel_name).strip():
             raise ValueError("channel_name is required and cannot be empty")
         if agent_uid <= 0:
@@ -78,13 +75,18 @@ class Agent:
         llm = OpenAI(
             api_key=self.openai_api_key,
             model=self.openai_model,
-            system_messages=build_translation_system_messages(self.target_lang),
+            system_messages=[
+                {
+                    "role": "system",
+                    "content": "You are a friendly voice assistant. Keep replies to one or two sentences.",
+                }
+            ],
             greeting_message=self.greeting,
-            temperature=0.3,
+            temperature=0.7,
         )
 
-        stt = DeepgramSTT(model="nova-3", language=self.source_lang)
-        tts = MiniMaxTTS(model="speech_2_6_turbo", voice_id=self.tts_voice)
+        stt = DeepgramSTT(model="nova-3", language="en")
+        tts = MiniMaxTTS(model="speech_2_6_turbo", voice_id="English_captivating_female1")
 
         parameters = {
             "data_channel": "rtm",
@@ -139,20 +141,17 @@ class Agent:
         )
 
         logger.info(
-            "Starting translation agent channel=%s agent_uid=%s user_uid=%s "
-            "source_lang=%s target_lang=%s",
+            "Starting events agent channel=%s agent_uid=%s user_uid=%s",
             channel_name,
             agent_uid,
             user_uid,
-            self.source_lang,
-            self.target_lang,
         )
 
         try:
             agent_id = await session.start()
         except Exception:
             logger.exception(
-                "Failed to start translation agent channel=%s agent_uid=%s user_uid=%s",
+                "Failed to start events agent channel=%s agent_uid=%s user_uid=%s",
                 channel_name,
                 agent_uid,
                 user_uid,
@@ -163,7 +162,7 @@ class Agent:
         self._sessions[agent_id] = session
 
         logger.info(
-            "Started translation agent agent_id=%s channel=%s",
+            "Started events agent agent_id=%s channel=%s",
             agent_id,
             channel_name,
         )
