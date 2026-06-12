@@ -1,14 +1,19 @@
-# Agora Agent Backend — Translator Recipe
+# Agora Agent Backend — Events Recipe
 
 FastAPI service that owns Agora token generation and agent session lifecycle for
-the translator recipe. It is the service the web client reaches through the
+the events recipe. It is the service the web client reaches through the
 Next.js `/api/*` rewrite proxy (port 8000).
 
 ## What this service does
 
-Runs the translation pipeline using only Agora-managed vendors — **zero-key**:
+Starts a simple conversational AI agent using only Agora-managed vendors — **zero-key** —
+and enables the three flags that drive the web event surface:
 
-**Pipeline:** `DeepgramSTT(language=SOURCE_LANG)` → `OpenAI` (translate to `TARGET_LANG`) → `MiniMaxTTS(voice_id=TTS_VOICE)`
+- `data_channel = "rtm"` — routes all events over RTM to the browser
+- `enable_metrics = True` — emits per-stage latency (STT, LLM, TTS)
+- `enable_error_message = True` — surfaces agent and message errors over RTM
+
+**Pipeline:** `DeepgramSTT(nova-3, en)` → `OpenAI` (Agora-managed, keyless) → `MiniMaxTTS`
 
 The `OpenAI` vendor is Agora-managed (keyless by default). There is **no
 separate `llm/` service** in this recipe.
@@ -27,7 +32,7 @@ python src/server.py
 
 ## Environment
 
-`server/.env.example` is the template. Required:
+Required:
 
 - `AGORA_APP_ID` — Agora project App ID.
 - `AGORA_APP_CERTIFICATE` — Agora project App Certificate.
@@ -36,15 +41,9 @@ Optional:
 
 | Variable | Default | Notes |
 | --- | :---: | --- |
-| `SOURCE_LANG` | `es` | Deepgram STT language code for the speaker |
-| `TARGET_LANG` | `English` | Language name used in the translation prompt |
-| `TTS_VOICE` | `English_captivating_female1` | MiniMax voice matching `TARGET_LANG` |
-| `OPENAI_MODEL` | `gpt-4o-mini` | OpenAI model for translation |
+| `OPENAI_MODEL` | `gpt-4o-mini` | OpenAI model |
 | `OPENAI_API_KEY` | — | BYO only — Agora manages the OpenAI key by default (keyless). Set only if your account requires it. |
 | `AGENT_GREETING` | built-in | Optional opening line override |
-
-> Note: when you change `TARGET_LANG`, also pick a matching `TTS_VOICE` for
-> that target language.
 
 ## API
 
