@@ -7,7 +7,7 @@ For coding agents working in `recipe-agent-events`. This repository is the
 
 - **`server/`** — Python FastAPI agent backend (:8000). Owns Agora token
   generation and agent session lifecycle. Uses the managed `OpenAI` vendor
-  (Agora-managed, keyless) with a simple system prompt. SDK: `agora-agents>=2.0.0`
+  (Agora-managed, keyless) with a simple system prompt. SDK: `agora-agents>=2.3.0`
   (`import agora_agent`).
 - **`web/`** — Next.js 16 / React 19 / TypeScript frontend (:3000). The
   net-new work is here: `EventTimeline` and the annotated transcript.
