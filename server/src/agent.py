@@ -12,7 +12,6 @@ OPENAI_API_KEY is optional — set it only if your account requires a BYO key.
 """
 import logging
 import os
-import time
 from typing import Any, Dict, Optional
 
 from agora_agent import Area, AsyncAgora
@@ -70,8 +69,6 @@ class Agent:
         if user_uid <= 0:
             raise ValueError("user_uid is required and cannot be empty")
 
-        name = f"agent_{channel_name}_{agent_uid}_{int(time.time())}"
-
         llm = OpenAI(
             api_key=self.openai_api_key,
             model=self.openai_model,
@@ -98,7 +95,7 @@ class Agent:
             parameters["output_audio_codec"] = output_audio_codec.strip()
 
         agora_agent = AgoraAgent(
-            name=name,
+            client=self.client,
             greeting=self.greeting,
             failure_message="Please wait a moment.",
             max_history=50,
@@ -132,7 +129,6 @@ class Agent:
         )
 
         session = agora_agent.create_async_session(
-            client=self.client,
             channel=channel_name,
             agent_uid=str(agent_uid),
             remote_uids=[str(user_uid)],
